@@ -1,0 +1,23 @@
+#' South Korea COVID-19 dataset
+#'
+#' COVID-19 data for South Korea from January 20th 2019 to March 20th 2020.
+#'
+#' @docType data
+#'
+#' @usage data(southkorea_covid19)
+#'
+#' @format A data frame with with 244 observations on the following 11 variables:
+#' \itemize{
+#' \item \code{n_covid1} - number of COVID-19 cases in the early phase of the pandemic (prequarantine)
+#' \item \code{Morbidity} - area morbidity rate
+#' \item \code{high_sch_p} - percentage of high school educated people
+#' \item \code{Healthcare_access} - access to healthcare
+#' \item \code{diff_sd} - difficulty to social distancing
+#' \item \code{Crowding} - area crowding
+#' \item \code{Migration} - population mobility
+#' \item \code{Health_behavior} - an index calculated based on habits as alcohol drinking, current smoking, etc
+#' \item \code{x} - a numeric vector of x coordinates
+#' \item \code{y} - a numeric vector of y coordinates
+#' \item \code{ln_total} - log transformation of the province's total population
+#' }
+"southkorea_covid19"
