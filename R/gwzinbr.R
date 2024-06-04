@@ -68,7 +68,7 @@
 #'
 #' @importFrom sp spDistsN1
 #'
-#' @importFrom stats model.extract model.matrix pnorm pt qt quantile
+#' @importFrom stats model.extract model.matrix pnorm pt qt quantile pf
 #'
 #'
 #' @export
