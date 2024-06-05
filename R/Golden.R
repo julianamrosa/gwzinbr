@@ -35,12 +35,12 @@
 #'
 #' ## GSS algorithm
 #'
-#' gss <- Golden(data = southkorea_covid19,
-#' formula = n_covid1~Morbidity+high_sch_p+Healthcare_access,
-#' xvarinf = NULL, weight = NULL, lat = "x", long = "y",
-#' offset = "ln_total", model = "poisson", method = "fixed_g",
-#' bandwidth = "cv", globalmin = FALSE, distancekm = TRUE,
-#' force=TRUE)
+#' gss <- Golden(data = korea_base_artigo[1:122, ],
+#' formula = n_covid1~diff_sd,
+#' xvarinf = NULL, weight = NULL, lat = "y", long = "x",
+#' offset = NULL, model = "poisson", method = "fixed_g",
+#' bandwidth = "cv", globalmin = FALSE, distancekm = FALSE,
+#' force=FALSE)
 #'
 #' ## Bandwidth
 #' gss$min_bandwidth
@@ -55,10 +55,10 @@
 #'
 #' @export
 
-Golden <- function(data, formula, xvarinf, weight,
+Golden <- function(data, formula, xvarinf=NULL, weight=NULL,
                    lat, long, globalmin=TRUE,
-                   method, model="zinb", bandwidth="cv", offset,
-                   force=FALSE, maxg=100, distancekm=FALSE){
+                   method, model="zinb", bandwidth="cv", offset=NULL, 
+                   force=FALSE, maxg=100, distancekm=FALSE){ #flag -> nulls
   output <- list()
   E <- 10
   mf <- match.call(expand.dots = FALSE)
@@ -77,7 +77,7 @@ Golden <- function(data, formula, xvarinf, weight,
     lambdag <- matrix(0, ncol(G), 1)
   }
   else{
-    G <- unlist(data[, xvarinf])
+    G <- as.matrix(data[, xvarinf])
     G <- cbind(rep(1, N), G)
   }
   wt <- rep(1, N)
@@ -100,9 +100,9 @@ Golden <- function(data, formula, xvarinf, weight,
   pos0 <- which(y==0)
   pos02 <- which(y==0)
   pos1 <- which(y>0)
-
+  
   #### global estimates ####
-  uj <- (y+mean(y))/2
+  uj <- (y+mean(y))/2 
   nj <- log(uj)
   parg <- sum((y-uj)^2/uj)/(N-nvar)
   ddpar <- 1
@@ -117,9 +117,9 @@ Golden <- function(data, formula, xvarinf, weight,
       alphag <- 1/parg
     }
     if (model == "zinb" | model == "negbin"){
-      if (cont>1){
+      if (cont>1){ 
         parg <- 1/(sum((y-uj)^2/uj)/(N-nvar))
-      }
+      }  
       while (abs(dpar)>0.0001 & cont1<200){
         if (parg<0){
           parg <- 0.00001
@@ -129,19 +129,19 @@ Golden <- function(data, formula, xvarinf, weight,
         hess <- sum(trigamma(parg+y)-trigamma(parg)+1/parg-2/(parg+uj)+(y+parg)/(parg+uj)^2)
         hess <- ifelse(hess==0, E^-23, hess)
         par0 <- parg
-        parg <- par0-as.vector(solve(hess))*gf
+        parg <- par0-as.vector(solve(hess, tol=E^-60))*gf
         if (parg>E^5){
           dpar <- 0.0001
           cont3 <- cont3+1
           if (cont3==1){
             parg <- 2
-          }
+          } 
           else if (cont3==2) {
             parg <- E^5
           }
           else if (cont3==3){
             parg <- 0.0001
-          }
+          } 
         }
         else{
           dpar <- parg-par0
@@ -161,11 +161,11 @@ Golden <- function(data, formula, xvarinf, weight,
       Ai <- (uj/(1+alphag*uj))+(y-uj)*(alphag*uj/(1+2*alphag*uj+alphag^2*uj*uj))
       Ai <- ifelse(Ai<=0,E^-5,Ai)
       zj <- nj+(y-uj)/(Ai*(1+alphag*uj))-Offset
-      if (det(t(x)%*%(Ai*x))==0) {
+      if (det(t(x)%*%(Ai*x))<E^-60){
         bg <- rep(0,ncol(x))
-      }
+      } 
       else{
-        bg <- solve(t(x)%*%(Ai*x))%*%t(x)%*%(Ai*zj)
+        bg <- solve(t(x)%*%(Ai*x), tol=E^-60)%*%t(x)%*%(Ai*zj)
       }
       nj <- as.vector(x%*%bg+Offset)
       nj <- ifelse(nj>700,700,nj)
@@ -178,10 +178,10 @@ Golden <- function(data, formula, xvarinf, weight,
       devg <- 2*sum(y*log(tt)-(y+1/alphag)*log((1+alphag*y)/(1+alphag*uj)))
       if (cont2>100){
         ddev <- 0.0000001
-      }
+      } 
       else{
         ddev <- devg-olddev
-      }
+      } 
       cont2 <- cont2+1
     }
     cont <-cont+1
@@ -189,12 +189,12 @@ Golden <- function(data, formula, xvarinf, weight,
   }
   if (!is.null(xvarinf)){
     lambda0 <- (length(pos0)-sum((parg/(uj+parg))^parg))/N
-    if (lambda0 <= 0) {
+    if (lambda0<=0){
       lambdag <- rep(0, ncol(G))
     }
-    else {
+    else{
       lambda0 <- log(lambda0/(1-lambda0))
-      lambdag <- rbind(lambda0, rep(0,ncol(G)-1))
+      lambdag <- c(lambda0, rep(0, ncol(G)-1)) #flag
     }
     pargg <- parg
     ujg <- uj
@@ -253,7 +253,7 @@ Golden <- function(data, formula, xvarinf, weight,
           hess <- sum((1-zkg)*(trigamma(parg+y)-trigamma(parg)+1/parg-2/(parg+uj)+(y+parg)/(parg+uj)^2))
           hess <- ifelse(hess==0, E^-23, hess)
           par0 <- parg
-          parg <- as.vector(par0-solve(hess)%*%gf)
+          parg <- as.vector(par0-solve(hess, tol=E^-60)%*%gf)
           if (aux2>50 & parg>E^5){
             dpar <- 0.0001
             cont3 <- cont3+1
@@ -288,11 +288,11 @@ Golden <- function(data, formula, xvarinf, weight,
         Ai <- ifelse(Ai<=0, E^-5, Ai)
         uj <- ifelse(uj<E^-150, E^-150, uj)
         zj <- (nj+(y-uj)/(((uj/(1+alphag*uj)+(y-uj)*(alphag*uj/(1+2*alphag*uj+alphag^2*uj^2))))*(1+alphag*uj)))-Offset
-        if (det(t(x)%*%(Ai*x))==0){
+        if (det(t(x)%*%(Ai*x))<E^-60){
           bg <- rep(0, nvar)
         }
         else{
-          bg <- solve(t(x)%*%(Ai*x))%*%t(x)%*%(Ai*zj)
+          bg <- solve(t(x)%*%(Ai*x), tol=E^-60)%*%t(x)%*%(Ai*zj)
         }
         nj <- x%*%bg+Offset
         nj <- ifelse(nj>700, 700, nj)
@@ -321,11 +321,11 @@ Golden <- function(data, formula, xvarinf, weight,
         Ai <- as.vector(pig*(1-pig))
         Ai <- ifelse(Ai<=0, E^-5, Ai)
         zj <- njl+(zkg-pig)*1/Ai
-        if (det(t(G*Ai)%*%G)==0){
+        if (det(t(G*Ai)%*%G)<E^-60){
           lambdag <- matrix(0, ncol(G), 1)
-        }
+        }  
         else{
-          lambdag <- solve(t(G*Ai)%*%G)%*%t(G*Ai)%*%zj
+          lambdag <- solve(t(G*Ai)%*%G, tol=E^-60)%*%t(G*Ai)%*%zj
         }
         njl <- G%*%lambdag
         njl <- ifelse(njl > maxg, maxg, njl)
@@ -341,7 +341,7 @@ Golden <- function(data, formula, xvarinf, weight,
     zkg <- ifelse(y>0, 0, zkg)
     if (model != 'zip' & model != 'zinb'){
       zkg <- 0
-    }
+    } 
     oldllike <- llikeg
     llikeg <- sum(zkg*(njl)-log(1+exp(njl))+(1-zkg)*(log(gamma1)))
     dllike <- llikeg-oldllike
@@ -409,7 +409,7 @@ Golden <- function(data, formula, xvarinf, weight,
         lambda0 <- (length(pos0)-sum((parg/(uj+parg))^parg))/N
         if (lambda0>0){
           lambda0 <- log(lambda0/(1-lambda0))
-          lambda <- rbind(lambda0, rep(0, ncol(G)-1))
+          lambda <- c(lambda0, rep(0, ncol(G)-1)) #flag
           njl <- G%*%lambda
         }
         zk <- 1/(1+exp(-njl)*(par/(par+uj))^par)
@@ -433,7 +433,7 @@ Golden <- function(data, formula, xvarinf, weight,
           par <- 1/alpha
         }
         else{
-          if (par<=E^-5){
+          if (par<=E^-5){ 
             if (i>1){
               par <- 1/alphai[i-1,2]
             }
@@ -460,7 +460,7 @@ Golden <- function(data, formula, xvarinf, weight,
             hess <- sum(w*wt*(1-zk)*(trigamma(par+y)-trigamma(par)+1/par-2/(par+uj)+(y+par)/(par+uj)^2))
             hess <- ifelse(hess==0, E^-23, hess)
             par0 <- par
-            par <- as.vector(par0-solve(hess)%*%gf)
+            par <- as.vector(par0-solve(hess, tol=E^-60)%*%gf)
             dpar <- par-par0
             if (par>=E^6){
               par <- E^6
@@ -544,7 +544,7 @@ Golden <- function(data, formula, xvarinf, weight,
         if (model=="zip" | model=="zinb"){
           if (j==1){
             alphatemp <- alpha
-            lambdatemp <- lambda[1]
+            lambdatemp <- lambda[1] 
           }
           else{
             alphatemp <- c(alphatemp, alpha)
@@ -575,9 +575,9 @@ Golden <- function(data, formula, xvarinf, weight,
             while (abs(ddev)>0.000001 & aux3<100){
               contador6 <- contador6+1
               Aii <- as.vector(pi*(1-pi))
-              Aii <- ifelse(Aii<=0, E^-5, Aii)
+              Aii <- ifelse(Aii<=0, E^-5, Aii)	
               zj <- njl+(zk-pi)/Aii
-              if (det(t(G*Aii*w*wt)%*%G)==0){
+              if (det(t(G*Aii*w*wt)%*%G)<E^-60){
                 lambda <- matrix(0, ncol(G), 1)
               }
               else{
@@ -616,20 +616,20 @@ Golden <- function(data, formula, xvarinf, weight,
       alphai_[i] <- alpha
       assign("alphai", alphai_, envir=parent.frame())
       alphai[i] <-  alpha
-      if (det(t(x)%*%(w*Ai*x*wt))==0){
+      if (det(t(x)%*%(w*Ai*x*wt))<E^-60){
         S[i] <- 0
       }
-      else {
+      else{
         S[i] <- (x[i,]%*%solve(t(x)%*%(w*Ai*x*wt), tol=E^-60)%*%t(x*w*Ai*wt))[i]
       }
       if (model=="zip" | model=="zinb"){
         yhat[i] <- (uj*(1-exp(njl)/(1+exp(njl))))[i]
         yhat2[i] <- uj[i]
-        if (det(t(G)%*%(w*Aii*G*wt))==0){
+        if (det(t(G)%*%(w*Aii*G*wt))<E^-60){
           Si[i] <- 0
         }
         else{
-          Si[i] <- (G[i,]%*%solve(t(G)%*%(w*Aii*G*wt))%*%t(G*w*Aii*wt))[i]
+          Si[i] <- (G[i,]%*%solve(t(G)%*%(w*Aii*G*wt), tol=E^-60)%*%t(G*w*Aii*wt))[i]
           if (any(lambda)==0){
             Si[i] <- 0
           }
@@ -645,19 +645,19 @@ Golden <- function(data, formula, xvarinf, weight,
           ll <- sum(-log(0+exp(pihat[pos0]))+log(0*exp(pihat[pos0])+(par_[pos0]/(par_[pos0]+yhat2[pos0]))^par_[pos0]))+
             sum(-log(0+exp(pihat[pos1]))+lgamma(par_[pos1]+y[pos1])-lgamma(y[pos1]+1)-lgamma(par_[pos1])+
                   y[pos1]*log(yhat2[pos1]/(par_[pos1]+yhat2[pos1]))+par_[pos1]*log(par_[pos1]/(par_[pos1]+yhat2[pos1])))
-
+          
           llnull1 <- sum(-log(1+zk[pos0])+log(zk[pos0]+(par_[pos0]/(par_[pos0]+y[pos0]))^par_[pos0]))+
             sum(-log(1+zk[pos1])+lgamma(par_[pos1]+y[pos1])-lgamma(y[pos1]+1)-lgamma(par_[pos1])+
                   y[pos1]*log(y[pos1]/(par_[pos1]+y[pos1]))+par_[pos1]*log(par_[pos1]/(par_[pos1]+y[pos1])))
-
+          
           llnull2 <- sum(-log(1+0)+log(0+(par_/(par_+mean(y)))^par_))+
-            sum(-log(1+0)+lgamma(par_+y)-lgamma(y+1)-lgamma(par_)+y*log(mean(y)/(par_+mean(y)))+par_*log(par_/(par_+mean(y))))
+            sum(-log(1+0)+lgamma(par_+y)-lgamma(y+1)-lgamma(par_)+y*log(mean(y)/(par_+mean(y)))+par_*log(par_/(par_+mean(y)))) 
         }
         else{
           ll <- sum(-log(1+exp(pihat[pos0]))+log(exp(pihat[pos0])+(par_[pos0]/(par_[pos0]+yhat2[pos0]))^par_[pos0]))+
             sum(-log(1+exp(pihat[pos1]))+lgamma(par_[pos1]+y[pos1])-lgamma(y[pos1]+1)-lgamma(par_[pos1])+
                   y[pos1]*log(yhat2[pos1]/(par_[pos1]+yhat2[pos1]))+par_[pos1]*log(par_[pos1]/(par_[pos1]+yhat2[pos1])))
-
+          
           llnull1 <- sum(-log(1+zk[pos0])+log(zk[pos0]+(par_[pos0]/(par_[pos0]+y[pos0]))^par_[pos0]))+
             sum(-log(1+zk[pos1])+lgamma(par_[pos1]+y[pos1])-lgamma(y[pos1]+1)-lgamma(par_[pos1])+
                   y[pos1]*log(y[pos1]/(par_[pos1]+y[pos1]))+par_[pos1]*log(par_[pos1]/(par_[pos1]+y[pos1])))
@@ -679,7 +679,7 @@ Golden <- function(data, formula, xvarinf, weight,
           pos0 <- pos1
           pos0x <- 1
           pos0xl <- 1
-        }
+        } 
         else {
           pos0x <- (par_[pos0]/(par_[pos0]+yhat[pos0]))^par_[pos0]
           pos0xl <- (par_[pos0]/(par_[pos0]+y[pos0]))^par_[pos0]
@@ -689,7 +689,7 @@ Golden <- function(data, formula, xvarinf, weight,
           sum(-log(0+exp(pihat[pos1]))+lgamma(par_[pos1]+y[pos1])-lgamma(y[pos1]+1)-lgamma(par_[pos1])+
                 y[pos1]*log(yhat[pos1]/(par_[pos1]+yhat[pos1]))+
                 par_[pos1]*log(par_[pos1]/(par_[pos1]+yhat[pos1])))
-
+        
         llnull1 <- sum(-log(1+zk)+log(zk+pos0xl))+ sum(-log(1+zk)+lgamma(par_[pos1]+y[pos1])-lgamma(y[pos1]+1)-lgamma(par_[pos1])+
                                                          y[pos1]*log(y[pos1]/(par_[pos1]+y[pos1]))+par_[pos1]*log(par_[pos1]/(par_[pos1]+y[pos1])))
         dev <- 2*(llnull1-ll)
@@ -708,7 +708,7 @@ Golden <- function(data, formula, xvarinf, weight,
     res <- cbind(CV, npar)
     return (res)
   }
-
+  
   #### defining golden section search parameters ####
   if (method=="fixed_g" | method=="fixed_bsq"){
     ax <- 0
@@ -716,7 +716,7 @@ Golden <- function(data, formula, xvarinf, weight,
     if (distancekm){
       bx <- bx*111
     }
-  }
+  }  
   if (method=="adaptive_bsq"){
     ax <- 5
     bx <- N
