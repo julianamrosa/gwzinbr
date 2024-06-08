@@ -7,15 +7,15 @@
 Golden(
   data,
   formula,
-  xvarinf,
-  weight,
+  xvarinf = NULL,
+  weight = NULL,
   lat,
   long,
   globalmin = TRUE,
   method,
   model = "zinb",
   bandwidth = "cv",
-  offset,
+  offset = NULL,
   force = FALSE,
   maxg = 100,
   distancekm = FALSE
@@ -72,12 +72,12 @@ data(southkorea_covid19)
 
 ## GSS algorithm
 
-gss <- Golden(data = southkorea_covid19,
-formula = n_covid1~Morbidity+high_sch_p+Healthcare_access,
-xvarinf = NULL, weight = NULL, lat = "x", long = "y",
-offset = "ln_total", model = "poisson", method = "fixed_g",
-bandwidth = "cv", globalmin = FALSE, distancekm = TRUE,
-force=TRUE)
+gss <- Golden(data = southkorea_covid19[1:122, ],
+formula = n_covid1~diff_sd,
+xvarinf = NULL, weight = NULL, lat = "y", long = "x",
+offset = NULL, model = "poisson", method = "fixed_g",
+bandwidth = "cv", globalmin = FALSE, distancekm = FALSE,
+force=FALSE)
 
 ## Bandwidth
 gss$min_bandwidth
