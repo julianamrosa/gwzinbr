@@ -93,6 +93,7 @@ gwzinbr <- function(data, formula, xvarinf=NULL, weight=NULL,
   if (is.null(xvarinf)){
     G <- matrix(1, N, 1)
     lambdag <- matrix(0, ncol(G), 1)
+    #lambdag <- rep(0, ncol(G))
   }
   else{
     G <- as.matrix(data[, xvarinf])
@@ -208,7 +209,7 @@ gwzinbr <- function(data, formula, xvarinf=NULL, weight=NULL,
   if (!is.null(xvarinf)){
     lambda0 <- (length(pos0)-sum((parg/(uj+parg))^parg))/N
     if (lambda0 <= 0) {
-      lambdag <- rep(0, ncol(G))
+      lambdag <- matrix(0, ncol(G), 1)
       message("NOTE: Expected number of zeros (", round(sum((parg/(uj+parg))^parg), 2),
               ") >= number of zeros (", length(pos0), "). No Need for Zero Model.")
     }
@@ -216,7 +217,9 @@ gwzinbr <- function(data, formula, xvarinf=NULL, weight=NULL,
       message("NOTE: Expected number of zeros (", round(sum((parg/(uj+parg))^parg), 2),
               ") < number of zeros (", length(pos0), "). Zero Model Used.")
       lambda0 <- log(lambda0/(1-lambda0))
-      lambdag <- rbind(lambda0, rep(0, ncol(G)-1))
+      #lambdag <- rbind(lambda0, rep(0, ncol(G)-1))
+      #lambdag <- c(lambda0, matrix(0, ncol(G)-1, 1))
+      lambdag <- rbind(lambda0, matrix(0, ncol(G)-1, 1))
     }
     pargg <- parg
     ujg <- uj
@@ -338,6 +341,7 @@ gwzinbr <- function(data, formula, xvarinf=NULL, weight=NULL,
         zj <- njl+(zkg-pig)*1/Ai
         if(det(t(G)%*%(Ai*G))==0){
           lambdag <- matrix(0, ncol(G), 1)
+          #lambdag <- rep(0, ncol(G)) #flag
         }
         else {
           lambdag <- solve(t(G)%*%(Ai*G))%*%t(G)%*%(Ai*zj)
@@ -397,14 +401,14 @@ gwzinbr <- function(data, formula, xvarinf=NULL, weight=NULL,
   names(output)[length(output)] <- "bandwidth"
   long <- unlist(data[, long])
   lat <- unlist(data[, lat])
-  COORD <- matrix(c(lat, long), ncol=2)
+  COORD <- matrix(c(long, lat), ncol=2)
   if (is.null(grid)){
-    POINTS <- matrix(c(lat, long), ncol=2)
+    POINTS <- matrix(c(long, lat), ncol=2)
   }
   else{
     long2 <- unlist(grid[, long])
     lat2 <- unlist(grid[, lat])
-    POINTS <- matrix(c(lat2, long2), ncol=2)
+    POINTS <- matrix(c(long2, lat2), ncol=2)
   }
   mm <- nrow(COORD)
   bi <- matrix(0, ncol(x)*mm, 4)
@@ -490,11 +494,11 @@ gwzinbr <- function(data, formula, xvarinf=NULL, weight=NULL,
       aux1 <- 1
       aux2 <- 1
       int <- 1
-      if (model == "zip" || model == "poisson") {
+      if (model == "zip" | model == "poisson"){
         alpha <- E^-6
         par <- 1/alpha
       }
-      if(model == "zinb" || model == "negbin"){
+      if(model == "zinb" | model == "negbin"){
         if(par >= E^6){
           par <- E^6
           dpar <- 0
@@ -745,28 +749,34 @@ gwzinbr <- function(data, formula, xvarinf=NULL, weight=NULL,
       if (all(lambda) > 0 & alpha == E^-6) {
         II <- II[1:ncol(x), 1:ncol(x)]
         if (det(II) == 0) {
-          varabetalambda <- rbind(matrix(0, nrow(II), 1), matrix(0, ncol(G), 1))
+          #varabetalambda <- rbind(matrix(0, nrow(II), 1), matrix(0, ncol(G), 1))
+          varabetalambda <- c(matrix(0, nrow(II), 1), matrix(0, ncol(G), 1))
         }
         else {
-          varabetalambda <- rbind(diag(solve(II, tol=E^-60)), matrix(0, ncol(G), 1))
+          #varabetalambda <- rbind(diag(solve(II, tol=E^-60)), matrix(0, ncol(G), 1))
+          varabetalambda <- c(diag(solve(II, tol=E^-60)), matrix(0, ncol(G), 1))
         }
       }
       else if (any(lambda) == 0 & alpha == E^-6) {
         II <- II[1:ncol(x), 1:ncol(x)]
         if (det(II) == 0) {
-          varabetalambda <- rbind(matrix(0, nrow(II), 1), matrix(0, ncol(G), 1))
+          #varabetalambda <- rbind(matrix(0, nrow(II), 1), matrix(0, ncol(G), 1))
+          varabetalambda <- c(matrix(0, nrow(II), 1), matrix(0, ncol(G), 1))
         }
         else {
-          varabetalambda <- rbind(diag(solve(II,tol=E^-60)), matrix(0, ncol(G), 1))
+          #varabetalambda <- rbind(diag(solve(II,tol=E^-60)), matrix(0, ncol(G), 1))
+          varabetalambda <- c(diag(solve(II,tol=E^-60)), matrix(0, ncol(G), 1))
         }
       }
       else {
         II <- II[1:(ncol(x)+1), 1:(ncol(x)+1)]
         if (det(II) == 0) {
-          varabetalambda <- rbind(matrix(0, nrow(II), 1), matrix(0, ncol(G), 1))
+          #varabetalambda <- rbind(matrix(0, nrow(II), 1), matrix(0, ncol(G), 1))
+          varabetalambda <- c(matrix(0, nrow(II), 1), matrix(0, ncol(G), 1))
         }
         else {
-          varabetalambda <- rbind(diag(solve(II, tol=E^-60)), matrix(0, ncol(G), 1))
+          #varabetalambda <- rbind(diag(solve(II, tol=E^-60)), matrix(0, ncol(G), 1))
+          varabetalambda <- c(diag(solve(II, tol=E^-60)), matrix(0, ncol(G), 1))
         }
       }
     }
@@ -789,14 +799,16 @@ gwzinbr <- function(data, formula, xvarinf=NULL, weight=NULL,
     }
     else if (any(lambda) == 0 & alpha > E^-6) {
       varb <- varabetalambda[2:(ncol(x)+1)]
-      varl <- matrix(0, ncol(G), 1)
+      #varl <- matrix(0, ncol(G), 1)
+      varl <- rep(0, ncol(G))
       alphai[i, 1] <- i
       alphai[i, 2] <- alpha
       alphai[i, 3] <- sqrt(abs(varabetalambda[1]))
     }
-    else if (any(lambda) == 0 & alpha == E^-6) {
+    else if (any(lambda) == 0 & alpha == E^-6){
       varb <- varabetalambda[1:ncol(x)]
-      varl <- matrix(0, ncol(G), 1)
+      #varl <- matrix(0, ncol(G), 1)
+      varl <- rep(0, ncol(G))
       alphai[i, 1] <- i
       alphai[i, 2] <- alpha
       alphai[i, 3] <- sqrt(1/abs(-(t(I1*daa))%*%I1))
@@ -809,8 +821,7 @@ gwzinbr <- function(data, formula, xvarinf=NULL, weight=NULL,
     bi[m1:m2, 3] <- COORD[i, 1]
     bi[m1:m2, 4] <- COORD[i, 2]
     varbi[m1:m2, 1] <- varb
-
-    if (model == "zip" || model == "zinb") {
+    if (model == "zip" || model == "zinb"){
       m1 <- (i-1)*ncol(G)+1
       m2 <- m1 + (ncol(G)-1)
       li[m1:m2, 1] <- i
@@ -843,7 +854,7 @@ gwzinbr <- function(data, formula, xvarinf=NULL, weight=NULL,
       else{
         BB[m1:m2, ] <- t(t(solve(t(CCC[, 1:ncol(x)])%*%(CCC[, ncol(CCC)-1]*CCC[, 1:ncol(x)]*CCC[, ncol(CCC)]))%*%t(CCC[, 1:ncol(x)]))*(CCC[, ncol(CCC)-1]*CCC[, ncol(CCC)]))
       }
-      if (model == "zip" || model == "zinb"){
+      if (model == "zip" | model == "zinb"){
         CCCl <- cbind(G, w, wt)
         m1 <- (i-1)*ncol(G)+1
         m2 <- m1+(ncol(G)-1)
@@ -893,7 +904,7 @@ gwzinbr <- function(data, formula, xvarinf=NULL, weight=NULL,
     tstat <- bi[, 2]/stdbi
     probt <- 2*(1-pt(abs(tstat), df))
     malpha <- 0.05*(nvar/v1)
-    if (model == "zip" || model == "zinb"){
+    if (model == "zip" | model == "zinb"){
       stdli <- sqrt(abs(varli))
       tstati <- li[, 2]
 
@@ -911,7 +922,7 @@ gwzinbr <- function(data, formula, xvarinf=NULL, weight=NULL,
     t_critical <- abs(qt(malpha/2, df))
     par_ <- 1/alphai[, 2]
 
-    if (model == "zinb" || model == "zip") {
+    if (model == "zinb" | model == "zip") {
       if (any(lambda) == 0) {
         ll <- sum(-log(0+exp(pihat[pos0])) + log(0*exp(pihat[pos0]) + (par_[pos0]/(par_[pos0]+yhat2[pos0]))^par_[pos0])) +
           sum(-log(0+exp(pihat[pos1])) + lgamma(par_[pos1]+y[pos1]) - lgamma(y[pos1]+1) - lgamma(par_[pos1]) +
@@ -949,7 +960,7 @@ gwzinbr <- function(data, formula, xvarinf=NULL, weight=NULL,
         adjpctll <- 1 - (llnull1-ll+(v1+v1/(ncol(x) + ncol(G))) + 0.5) / (llnull1 - llnull2)
       }
     }
-    if(model == "poisson" || model == "negbin"){
+    if(model == "poisson" | model == "negbin"){
       if (length(pos02)==0){
         pos0 <- pos1
         pos0x <- rep(1, length(pos1))
@@ -991,7 +1002,7 @@ gwzinbr <- function(data, formula, xvarinf=NULL, weight=NULL,
     names(output)[length(output)] <- "measures"
     beta_ <- matrix(bi[, 2], nrow = N, byrow=T)
     beta2_ <- beta_
-    if(model == "negbin" || model == "zinb"){
+    if(model == "negbin" | model == "zinb"){
       alpha_= matrix(alphai[, 1:2], N)
       beta2_= cbind(beta_, alpha_[, 2])
     }
@@ -1032,7 +1043,7 @@ gwzinbr <- function(data, formula, xvarinf=NULL, weight=NULL,
       colnames(descripts) <- c('Intercept', XVAR)
     }
     t_test_gwr_param_estimates <- c(malpha, t_critical, df)
-    names(t_test_gwr_param_estimates) <- c("p_value", "t_critical", "df")
+    names(t_test_gwr_param_estimates) <- c("alpha_level_5_pct", "t_critical", "df")
     output <- append(output, list(t_test_gwr_param_estimates))
     names(output)[length(output)] <- "t_test_gwr_param_estimates"
     output <- append(output, list(qntls))
@@ -1075,7 +1086,7 @@ gwzinbr <- function(data, formula, xvarinf=NULL, weight=NULL,
         colnames(descriptls) <- c(xvarinf)
       }
       t_test_gwr_zero_infl_param_estimates <- c(malpha, t_critical, df)
-      names(t_test_gwr_zero_infl_param_estimates) <- c("p_value", "t_critical", "df")
+      names(t_test_gwr_zero_infl_param_estimates) <- c("alpha_level_5_pct", "t_critical", "df")
       output <- append(output, list(t_test_gwr_zero_infl_param_estimates))
       names(output)[length(output)] <- "t_test_gwr_zero_infl_param_estimates"
       #####

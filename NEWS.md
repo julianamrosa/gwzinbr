@@ -1,3 +1,3 @@
-# gwzinbr 0.1.0
+# gwzinbr 0.2.0
 
-* Initial CRAN submission.
+* Structural fixes.

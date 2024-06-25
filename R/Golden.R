@@ -753,6 +753,9 @@ Golden <- function(data, formula, xvarinf=NULL, weight=NULL,
     CV2 <- res2[1]
     if (GMY==1){
       band <- data.frame('GSS_count'=GMY, 'h1'=h1, 'cv1'=CV1, 'h2'=h2, 'cv2'=CV2)
+      if (bandwidth=="aic"){
+        colnames(band) <- c('GSS_count', 'h1', 'aic1', 'h2', 'aic2')
+      }
     }
     else{
       band <- rbind(band, c(GMY, h1, CV1, h2, CV2))
